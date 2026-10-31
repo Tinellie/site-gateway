@@ -1,0 +1,79 @@
+name: Deploy Gateway
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gateway-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out gateway
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Validate configuration
+        env:
+          ACME_EMAIL: validation@example.com
+        run: |
+          set -eu
+          docker network create gateway
+          docker compose config --quiet
+          docker compose run --rm --no-deps caddy \
+            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
+      - name: Deploy gateway over SSH
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17 # v1.2.0
+        env:
+          DEPLOY_COMMIT: ${{ github.sha }}
+        with:
+          host: 139.180.203.201
+          username: deploy
+          port: 22
+          key: ${{ secrets.VULTR_SSH_KEY }}
+          passphrase: ${{ secrets.VULTR_SSH_PASSPHRASE }}
+          fingerprint: ${{ secrets.VULTR_HOST_FINGERPRINT }}
+          envs: DEPLOY_COMMIT
+          command_timeout: 10m
+          script: |
+            set -eu
+            cd /opt/site-gateway
+            test -f .env
+            test -f compose.yaml
+            docker network inspect gateway > /dev/null
+
+            # Never overwrite local changes or delete persisted data.
+            git diff --quiet
+            git diff --cached --quiet
+            git fetch origin "$DEPLOY_COMMIT"
+            git merge --ff-only "$DEPLOY_COMMIT"
+            test "$(git rev-parse HEAD)" = "$DEPLOY_COMMIT"
+
+            docker compose config --quiet
+            docker compose run --rm --no-deps caddy \
+              caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
+            docker compose up -d --no-deps --force-recreate caddy
+            ready=false
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              if docker compose exec -T caddy \
+                wget -q -O /dev/null http://127.0.0.1:2019/config/; then
+                ready=true
+                break
+              fi
+              sleep 2
+            done
+            docker compose ps
+            if [ "$ready" != true ]; then
+              docker compose logs --tail=100 caddy
+              echo "Caddy did not become responsive." >&2
+              exit 1
+            fi

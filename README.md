@@ -170,3 +170,36 @@ The old app services must also be running for the old site to work.
 
 Do not delete certificate volumes or use volume-removal commands.
 App/database backups are managed separately by their own projects.
+
+## GitHub automatic deployment
+
+Repository: `https://github.com/Tinellie/site-gateway`.
+The workflow in `.github/workflows/deploy.yml` runs on pushes to `main` or
+`master`, or manually from Actions. Actions are pinned to verified commit SHAs.
+It validates the configuration in CI, connects as `deploy` to
+`139.180.203.201:22`, and updates `/opt/site-gateway` to the exact triggering
+commit using a fast-forward merge. Local tracked changes or diverged history
+stop deployment instead of being overwritten.
+
+Set these repository Actions secrets:
+
+| Secret | Value |
+| --- | --- |
+| `VULTR_SSH_KEY` | Private key dedicated to Actions, authorized for the server's deploy user |
+| `VULTR_SSH_PASSPHRASE` | That key's passphrase, if set |
+| `VULTR_HOST_FINGERPRINT` | SHA256 SSH host-key fingerprint verified through a trusted server console |
+
+The server independently needs read access to this GitHub repository, such as
+a read-only repository deploy key. Actions' SSH key authenticates to the server;
+it does not grant the server access to GitHub.
+
+The server clone must be in `/opt/site-gateway`, use this repository as origin,
+and contain an untracked `.env` with a real ACME email. The external `gateway`
+network must already exist. Use this directory in place of `/opt/gateway` in
+the setup instructions above for the current server.
+
+The workflow recreates only Caddy, preserving certificate volumes and all app
+containers. There is a brief public-entry interruption. It checks Caddy's
+internal admin endpoint for readiness; successful deployment does not establish
+that stopped/missing upstream apps or external DNS/TLS are working.
+No GitHub deployment secrets belong in repository files.
