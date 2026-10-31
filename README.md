@@ -6,6 +6,7 @@ This project does not contain app code or a database.
 | Domain | Docker network alias | Internal port |
 | --- | --- | --- |
 | `cm.suzutsuki.com` | `comiket-web` | 80 |
+| `cm-old.suzutsuki.com` | `comiket-web` | 80 |
 | `timeline.suzutsuki.com` | `timeline-web` | 3000 |
 
 Both apps and Caddy must join the external Docker network named `gateway`.
