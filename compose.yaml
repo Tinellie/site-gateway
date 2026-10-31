@@ -1,0 +1,32 @@
+name: gateway
+
+services:
+  caddy:
+    image: caddy:2.9
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - type: bind
+        source: ./Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind:
+          create_host_path: false
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - gateway
+
+networks:
+  gateway:
+    external: true
+    name: gateway
+
+volumes:
+  caddy_data:
+  caddy_config:

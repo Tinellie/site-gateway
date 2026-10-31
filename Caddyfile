@@ -1,0 +1,13 @@
+{
+	email {$ACME_EMAIL}
+}
+
+cm.suzutsuki.com {
+	encode gzip zstd
+	reverse_proxy comiket-web:80
+}
+
+timeline.suzutsuki.com {
+	encode gzip zstd
+	reverse_proxy timeline-web:3000
+}
