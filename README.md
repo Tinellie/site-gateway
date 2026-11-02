@@ -8,8 +8,12 @@ This project does not contain app code or a database.
 | `cm.suzutsuki.com` | `comiket-web` | 80 |
 | `cm-old.suzutsuki.com` | `comiket-web` | 80 |
 | `timeline.suzutsuki.com` | `timeline-web` | 3000 |
+| `acc.suzutsuki.com` | `accounting-web` | 3000 |
 
 Both apps and Caddy must join the external Docker network named `gateway`.
+Accounting joins the same gateway network from its own Compose project.
+The accounting route has no gateway authentication; it must not be treated as
+private merely because it uses HTTPS.
 Only Caddy publishes public ports. Caddy uses the same `caddy:2.9` image
 version as the existing deployment.
 

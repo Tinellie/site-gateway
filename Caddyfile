@@ -16,3 +16,8 @@ timeline.suzutsuki.com {
 	encode gzip zstd
 	reverse_proxy timeline-web:3000
 }
+
+acc.suzutsuki.com {
+	encode gzip zstd
+	reverse_proxy accounting-web:3000
+}
