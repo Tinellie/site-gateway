@@ -9,7 +9,7 @@ suzutsuki.com {
 
 cm.suzutsuki.com {
 	encode gzip zstd
-	reverse_proxy comiket-web:80
+	reverse_proxy comike-web:3001
 }
 
 cm-old.suzutsuki.com {
